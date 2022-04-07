@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"crypto/tls"
@@ -10,15 +10,15 @@ import (
 	"github.com/comvex-jp/uipath-go"
 )
 
-func main() {
+func Run() {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
 	credentials := uipath.Credentials{
-		ClientID:   "test_key_here",
-		UserKey:    "test_user_key_here",
-		TenantName: "tenant_name_here",
+		ClientID:   "{{ClientID}}",
+		UserKey:    "{{UserKey}}",
+		TenantName: "{{TenantName}}",
 	}
 
 	httpClient := &http.Client{Transport: tr}
@@ -26,7 +26,7 @@ func main() {
 	c := uipath.Client{
 		HttpClient:  httpClient,
 		Credentials: credentials,
-		URLEndpoint: "https://cloud.uipath.com/{org_name}/{tenant_name}/odata/",
+		URLEndpoint: "{{URLEndpoint}}",
 	}
 
 	res, err := uipath.GetOAuthToken(&c)
@@ -36,34 +36,38 @@ func main() {
 
 	c.Credentials.Token = res.AccessToken
 
+	fmt.Print("Store Asset ")
 	fmt.Println(StoreAsset(c))
+	fmt.Print("Get Asset ")
 	fmt.Println(GetAssetById(c))
+	fmt.Print("Update Asset ")
 	fmt.Println(UpdateAsset(c))
+	fmt.Print("List Assets ")
 	fmt.Println(ListAssets(c))
+	fmt.Print("Store QueueItem ")
 	fmt.Println(StoreQueueItem(c))
+	fmt.Print("Get QueueItem ")
 	fmt.Println(GetQueueItemByID(c))
+	fmt.Print("List QueueItems ")
 	fmt.Println(ListQueueItems(c))
 }
 
 func GetAssetById(c uipath.Client) (uipath.Asset, error) {
-	folderID := uint(292388)
-
 	asset, err := StoreAsset(c)
 	if err != nil {
 		return asset, err
 	}
 
 	aHandler := uipath.AssetHandler{
-		Client: &c,
+		Client:   &c,
+		FolderId: uint(292388),
 	}
 
-	return aHandler.GetByID(asset.ID, folderID)
+	return aHandler.GetByID(asset.ID)
 }
 
 func ListAssets(c uipath.Client) ([]uipath.Asset, int, error) {
 	var assetList uipath.AssetList
-
-	folderID := uint(292388)
 
 	filters := map[string]string{
 		"$top": "1",
@@ -75,22 +79,22 @@ func ListAssets(c uipath.Client) ([]uipath.Asset, int, error) {
 	}
 
 	aHandler := uipath.AssetHandler{
-		Client: &c,
+		Client:   &c,
+		FolderId: uint(292388),
 	}
 
-	return aHandler.List(filters, folderID)
+	return aHandler.List(filters)
 }
 
 func UpdateAsset(c uipath.Client) (uipath.Asset, error) {
-	folderID := uint(292388)
-
 	asset, err := StoreAsset(c)
 	if err != nil {
 		return asset, err
 	}
 
 	aHandler := uipath.AssetHandler{
-		Client: &c,
+		Client:   &c,
+		FolderId: uint(292388),
 	}
 
 	updateAsset := uipath.Asset{
@@ -100,44 +104,44 @@ func UpdateAsset(c uipath.Client) (uipath.Asset, error) {
 		StringValue: "Eyyyyyyy",
 	}
 
-	return aHandler.Update(updateAsset, folderID)
+	return aHandler.Update(updateAsset)
 }
 
 func StoreAsset(c uipath.Client) (uipath.Asset, error) {
-	folderID := uint(292388)
 	aHandler := uipath.AssetHandler{
-		Client: &c,
+		Client:   &c,
+		FolderId: uint(292388),
 	}
 
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+
 	asset := uipath.Asset{
-		Name:        fmt.Sprintf("Asset %d", rand.Intn(100)),
+		Name:        fmt.Sprintf("Asset %d", r1.Intn(100)),
 		ValueScope:  "Global",
 		ValueType:   "Text",
 		StringValue: "TestValue",
 	}
 
-	return aHandler.Store(asset, folderID)
+	return aHandler.Store(asset)
 }
 
 func GetQueueItemByID(c uipath.Client) (uipath.QueueItem, error) {
-	folderID := uint(292388)
-
 	qItem, err := StoreQueueItem(c)
 	if err != nil {
 		return qItem, err
 	}
 
 	queueHandler := uipath.QueueItemHandler{
-		Client: &c,
+		Client:   &c,
+		FolderId: uint(292388),
 	}
 
-	return queueHandler.GetByID(qItem.ID, folderID)
+	return queueHandler.GetByID(qItem.ID)
 }
 
 func ListQueueItems(c uipath.Client) ([]uipath.QueueItem, int, error) {
 	var queueItemList uipath.QueueItemList
-	folderID := uint(292388)
-
 	filters := map[string]string{
 		"$top": "1",
 	}
@@ -148,16 +152,17 @@ func ListQueueItems(c uipath.Client) ([]uipath.QueueItem, int, error) {
 	}
 
 	queueHandler := uipath.QueueItemHandler{
-		Client: &c,
+		Client:   &c,
+		FolderId: uint(292388),
 	}
 
-	return queueHandler.List(filters, folderID)
+	return queueHandler.List(filters)
 }
 
 func StoreQueueItem(c uipath.Client) (uipath.QueueItem, error) {
-	folderID := uint(292388)
 	qHandler := uipath.QueueItemHandler{
-		Client: &c,
+		Client:   &c,
+		FolderId: uint(292388),
 	}
 
 	now := time.Now().Format("2006-01-02T15:04:05.4407392Z")
@@ -173,5 +178,5 @@ func StoreQueueItem(c uipath.Client) (uipath.QueueItem, error) {
 		Reference: "Petstore",
 	}
 
-	return qHandler.Store(qI, folderID)
+	return qHandler.Store(qI)
 }
