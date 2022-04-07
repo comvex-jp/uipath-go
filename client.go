@@ -73,6 +73,9 @@ func (c Client) Send(requestMethod string, url string, body interface{}, headers
 	}(resp.Body)
 
 	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return jsonBody, err
+	}
 
 	// Handle any errors from the response
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
