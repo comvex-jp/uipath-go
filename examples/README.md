@@ -16,6 +16,18 @@ You need to modify the following items in `examples.go`
 		URLEndpoint: "{{URLEndpoint}}", //UIPath URL endpoint
 	}
 ```
+You may also need to modify the folderIDs
+```
+	aHandler := uipath.AssetHandler{
+		Client:   &c,
+		FolderId: uint(292388),
+	}
+    ...
+    queueHandler := uipath.QueueItemHandler{
+		Client:   &c,
+		FolderId: uint(292388),
+	}
+```
 
 ## Running the example via `gore`
 ```
