@@ -23,8 +23,8 @@ type QueueItemHandler struct {
 type QueueItem struct {
 	ID                                 uint                   `json:"Id,omitempty"`
 	QueueDefinitionID                  uint                   `json:"QueueDefinitionId,omitempty"`
-	DeferDate                          string                 `json:"DeferDate"`
-	DueDate                            string                 `json:"DueDate"`
+	DeferDate                          string                 `json:"DeferDate,omitempty"`
+	DueDate                            string                 `json:"DueDate,omitempty"`
 	RiskSlaDate                        string                 `json:"RiskSlaDate,omitempty"`
 	Priority                           string                 `json:"Priority"`
 	Status                             string                 `json:"Status,omitempty"`
