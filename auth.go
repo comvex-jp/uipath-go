@@ -34,7 +34,7 @@ func GetOAuthToken(c *Client) (OauthTokenResp, error) {
 		RefreshToken: c.Credentials.UserKey,
 	}
 
-	respBody, err := c.Send("POST", url, body, nil, nil)
+	respBody, err := c.Send("POST", url, body, map[string]string{}, nil)
 	if err != nil {
 		return result, err
 	}

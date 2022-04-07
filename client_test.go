@@ -115,7 +115,7 @@ func (suite *ClientTestSuite) TestSendWithAuthorization() {
 	assert.Equal(suite.T(), string(res), resBody)
 }
 
-func (s *ClientTestSuite) PrepareUIPathAuthAPIResponder(providedData OauthTokenResp, envBaseUrl string, endpoint string, method string, HTTPStatusCode int, success bool) {
+func (suite *ClientTestSuite) PrepareUIPathAuthAPIResponder(providedData OauthTokenResp, envBaseUrl string, endpoint string, method string, HTTPStatusCode int, success bool) {
 
 	mockResponse, err := json.Marshal(providedData)
 	if err != nil {

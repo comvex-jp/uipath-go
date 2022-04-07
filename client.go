@@ -3,11 +3,16 @@ package uipath
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
 
-const OrchestratorURL = "https:://orchestrator-url.com/"
+const (
+	HeaderOrganizationUnitId = "X-UIPATH-OrganizationUnitId"
+	HeaderAuthorization      = "Authorization"
+	HeaderTenantName         = "X-UIPATH-TenantName"
+)
 
 type HttpClientInterface interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -50,8 +55,8 @@ func (c Client) Send(requestMethod string, url string, body interface{}, headers
 		attachQueryParams(req, queryParams)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-UIPATH-TenantName", c.Credentials.TenantName)
+	headers["Content-Type"] = "application/json"
+	headers[HeaderTenantName] = c.Credentials.TenantName
 
 	attachHeaders(req, headers)
 
@@ -60,7 +65,12 @@ func (c Client) Send(requestMethod string, url string, body interface{}, headers
 		return jsonBody, err
 	}
 
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 
@@ -74,20 +84,14 @@ func (c Client) Send(requestMethod string, url string, body interface{}, headers
 
 // SendWithAuthorization attaches the authorization token to the headers and then completes the request
 func (c *Client) SendWithAuthorization(requestMethod, url string, body interface{}, headers map[string]string, queryParams map[string]string) ([]byte, error) {
-	headersWithAuthorization := make(map[string]string)
-
-	for k, v := range headers {
-		headersWithAuthorization[k] = v
-	}
-
-	headersWithAuthorization["Authorization"] = "Bearer " + c.Credentials.Token
+	headers[HeaderAuthorization] = "Bearer " + c.Credentials.Token
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return jsonBody, err
 	}
 
-	return c.Send(requestMethod, url, body, headersWithAuthorization, queryParams)
+	return c.Send(requestMethod, url, body, headers, queryParams)
 }
 
 func attachHeaders(req *http.Request, headers map[string]string) {

@@ -17,7 +17,8 @@ const (
 
 // AssetHandler struct defines what the asset handler looks like
 type AssetHandler struct {
-	Client *Client
+	Client   *Client
+	FolderId uint
 }
 
 // Asset struct defines what the asset model looks like
@@ -57,16 +58,12 @@ type Tag struct {
 }
 
 // GetByID fetches the asset by id
-func (a *AssetHandler) GetByID(ID uint, folderID uint) (Asset, error) {
+func (a *AssetHandler) GetByID(ID uint) (Asset, error) {
 	var asset Asset
-
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
 
 	url := fmt.Sprintf("%s%s(%d)", a.Client.URLEndpoint, "Assets", ID)
 
-	resp, err := a.Client.SendWithAuthorization("GET", url, nil, headers, map[string]string{})
+	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return asset, err
 	}
@@ -78,17 +75,13 @@ func (a *AssetHandler) GetByID(ID uint, folderID uint) (Asset, error) {
 	return asset, nil
 }
 
-// GetByID fetches the asset by name
-func (a *AssetHandler) GetByName(name string, folderID uint) (Asset, error) {
+// GetByName fetches the asset by name
+func (a *AssetHandler) GetByName(name string) (Asset, error) {
 	var asset Asset
-
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
 
 	url := fmt.Sprintf("%s%s?$filter=Name eq '%s'", a.Client.URLEndpoint, "Assets", name)
 
-	resp, err := a.Client.SendWithAuthorization("GET", url, nil, headers, map[string]string{})
+	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return asset, err
 	}
@@ -101,16 +94,12 @@ func (a *AssetHandler) GetByName(name string, folderID uint) (Asset, error) {
 }
 
 // List fetches a list of assets that can be filtered using query parameters
-func (a *AssetHandler) List(filters map[string]string, folderID uint) ([]Asset, int, error) {
+func (a *AssetHandler) List(filters map[string]string) ([]Asset, int, error) {
 	var assetList AssetList
-
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
 
 	url := fmt.Sprintf("%s%s", a.Client.URLEndpoint, "Assets")
 
-	resp, err := a.Client.SendWithAuthorization("GET", url, nil, headers, filters)
+	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), filters)
 	if err != nil {
 		return assetList.Value, assetList.Count, err
 	}
@@ -123,16 +112,12 @@ func (a *AssetHandler) List(filters map[string]string, folderID uint) ([]Asset, 
 }
 
 // Store creates and saves an asset on the orchestrator
-func (a *AssetHandler) Store(asset Asset, folderID uint) (Asset, error) {
+func (a *AssetHandler) Store(asset Asset) (Asset, error) {
 	var result Asset
-
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
 
 	url := fmt.Sprintf("%s%s", a.Client.URLEndpoint, "Assets")
 
-	resp, err := a.Client.SendWithAuthorization("POST", url, asset, headers, map[string]string{})
+	resp, err := a.Client.SendWithAuthorization("POST", url, asset, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return result, err
 	}
@@ -145,22 +130,27 @@ func (a *AssetHandler) Store(asset Asset, folderID uint) (Asset, error) {
 }
 
 // Update updates an asset
-func (a *AssetHandler) Update(asset Asset, folderID uint) (Asset, error) {
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
+func (a *AssetHandler) Update(asset Asset) (Asset, error) {
 
 	url := fmt.Sprintf("%s%s(%d)", a.Client.URLEndpoint, "Assets", asset.ID)
 
-	_, err := a.Client.SendWithAuthorization("PUT", url, asset, headers, map[string]string{})
+	_, err := a.Client.SendWithAuthorization("PUT", url, asset, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return asset, err
 	}
 
-	updatedAsset, err := a.GetByID(asset.ID, folderID)
+	updatedAsset, err := a.GetByID(asset.ID)
 	if err != nil {
 		return asset, err
 	}
 
 	return updatedAsset, nil
+}
+
+func (a *AssetHandler) buildHeaders() map[string]string {
+	var headers = map[string]string{}
+
+	headers[HeaderOrganizationUnitId] = strconv.Itoa(int(a.FolderId))
+
+	return headers
 }

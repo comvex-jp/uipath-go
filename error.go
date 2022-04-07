@@ -14,7 +14,7 @@ type RequestError struct {
 	ErrorCode        int    `json:"errorCode"`
 	ErrorDescription string `json:"error_description"`
 	TraceIDs         string `json:"traceId"`
-	ResoureIds       []uint `json:"resourceIds"`
+	ResourceIds      []uint `json:"resourceIds"`
 }
 
 func (r *RequestError) Error() string {

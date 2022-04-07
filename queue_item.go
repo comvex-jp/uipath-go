@@ -13,12 +13,13 @@ const (
 	PriorityHigh   = "High"
 )
 
-// QueueItemHandler struct defines what the asset handler looks like
+// QueueItemHandler struct defines what the queue item handler looks like
 type QueueItemHandler struct {
-	Client *Client
+	Client   *Client
+	FolderId uint
 }
 
-// Queue struct defines what the asset model looks like
+// QueueItem struct defines what the queue item model looks like
 type QueueItem struct {
 	ID                                 uint                   `json:"Id,omitempty"`
 	QueueDefinitionID                  uint                   `json:"QueueDefinitionId,omitempty"`
@@ -49,7 +50,7 @@ type QueueItem struct {
 	Name                               string                 `json:"Name"`
 }
 
-// QueueItemList defines what the asset model looks like
+// QueueItemList defines what the queue item list model looks like
 type QueueItemList struct {
 	Count int         `json:"@odata.count"`
 	Value []QueueItem `json:"value"`
@@ -70,20 +71,16 @@ type ProcessingException struct {
 }
 
 // Store creates and stores a queue item in the uipath orchestrator
-func (q *QueueItemHandler) Store(queueItem QueueItem, folderID uint) (QueueItem, error) {
+func (q *QueueItemHandler) Store(queueItem QueueItem) (QueueItem, error) {
 	var result QueueItem
 
 	queueItemCreateRequest := QueueItemCreateRequest{
 		ItemData: queueItem,
 	}
 
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
-
 	url := fmt.Sprintf("%s%s", q.Client.URLEndpoint, "Queues/UiPathODataSvc.AddQueueItem")
 
-	resp, err := q.Client.SendWithAuthorization("POST", url, queueItemCreateRequest, headers, map[string]string{})
+	resp, err := q.Client.SendWithAuthorization("POST", url, queueItemCreateRequest, q.buildHeaders(), map[string]string{})
 	if err != nil {
 		return result, err
 	}
@@ -96,16 +93,12 @@ func (q *QueueItemHandler) Store(queueItem QueueItem, folderID uint) (QueueItem,
 }
 
 // GetByID fetches a queue item by id
-func (q *QueueItemHandler) GetByID(ID uint, folderID uint) (QueueItem, error) {
+func (q *QueueItemHandler) GetByID(ID uint) (QueueItem, error) {
 	var queueItem QueueItem
-
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
 
 	url := fmt.Sprintf("%s%s(%d)", q.Client.URLEndpoint, "QueueItems", ID)
 
-	resp, err := q.Client.SendWithAuthorization("GET", url, nil, headers, map[string]string{})
+	resp, err := q.Client.SendWithAuthorization("GET", url, nil, q.buildHeaders(), map[string]string{})
 	if err != nil {
 		return queueItem, err
 	}
@@ -118,16 +111,12 @@ func (q *QueueItemHandler) GetByID(ID uint, folderID uint) (QueueItem, error) {
 }
 
 // List fetches a list of queue items that can be filtered
-func (q *QueueItemHandler) List(filters map[string]string, folderID uint) ([]QueueItem, int, error) {
+func (q *QueueItemHandler) List(filters map[string]string) ([]QueueItem, int, error) {
 	var queueItemList QueueItemList
-
-	headers := map[string]string{
-		"X-UIPATH-OrganizationUnitId": strconv.Itoa(int(folderID)),
-	}
 
 	url := fmt.Sprintf("%s%s", q.Client.URLEndpoint, "QueueItems")
 
-	resp, err := q.Client.SendWithAuthorization("GET", url, nil, headers, filters)
+	resp, err := q.Client.SendWithAuthorization("GET", url, nil, q.buildHeaders(), filters)
 	if err != nil {
 		return queueItemList.Value, queueItemList.Count, err
 	}
@@ -137,4 +126,12 @@ func (q *QueueItemHandler) List(filters map[string]string, folderID uint) ([]Que
 	}
 
 	return queueItemList.Value, queueItemList.Count, err
+}
+
+func (q *QueueItemHandler) buildHeaders() map[string]string {
+	var headers = map[string]string{}
+
+	headers[HeaderOrganizationUnitId] = strconv.Itoa(int(q.FolderId))
+
+	return headers
 }
