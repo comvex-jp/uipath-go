@@ -25,11 +25,11 @@ func Run() {
 		Client: &uipath.Client{
 			HttpClient: &http.Client{Transport: tr},
 			Credentials: uipath.Credentials{
-				ClientID:   "8DEv1AMNXczW3y4U15LL3jYf62jK93n5",
-				UserKey:    "oQopNZA8271RA5CX4muyWS6mXihznsHvuaMsGhula9Okd",
-				TenantName: "DigimaLeads",
+				ClientID:   "{{test_client_Id}}",
+				UserKey:    "{{test_user_key}}",
+				TenantName: "{{test_tenant_name}}",
 			},
-			BaseURL: "https://cloud.uipath.com/comvexcoltda/DigimaLeads/odata/",
+			BaseURL: "{{test_base_url}}",
 			Cache:   cache.New(5*time.Minute, 10*time.Minute),
 		},
 	}
