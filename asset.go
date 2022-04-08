@@ -77,6 +77,7 @@ func (a *AssetHandler) GetByID(ID uint) (Asset, error) {
 
 // GetByName fetches the asset by name
 func (a *AssetHandler) GetByName(name string) (Asset, error) {
+	var assetList AssetList
 	var asset Asset
 
 	url := fmt.Sprintf("%s%s?$filter=Name eq '%s'", a.Client.BaseURL, AssetEndpoint, name)
@@ -86,9 +87,15 @@ func (a *AssetHandler) GetByName(name string) (Asset, error) {
 		return asset, err
 	}
 
-	err = json.Unmarshal(resp, &asset)
+	if err = json.Unmarshal(resp, &assetList); err != nil {
+		return asset, err
+	}
 
-	return asset, nil
+	if assetList.Count < 1 {
+		return asset, nil
+	}
+
+	return assetList.Value[0], nil
 }
 
 // List fetches a list of assets that can be filtered using query parameters

@@ -34,11 +34,6 @@ func Run() {
 		},
 	}
 
-	res, err := uipath.GetOAuthToken(e.Client)
-	if err != nil {
-		fmt.Println(res, err)
-	}
-
 	fmt.Println(e.StoreAsset())
 	fmt.Println(e.GetAssetById())
 	fmt.Println(e.UpdateAsset())
