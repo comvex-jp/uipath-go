@@ -80,6 +80,23 @@ func (suite *ClientTestSuite) TestGetCachedAuthHeaderValue() {
 	assert.Equal(suite.T(), testAuthToken, token)
 }
 
+func (suite *ClientTestSuite) TestGetCachedAuthHeaderValueWhenTokenIsEmpty() {
+	suite.c.HttpClient = &http.Client{Transport: httpmock.DefaultTransport}
+	suite.c.Credentials = Credentials{
+		ClientID: "asdasdasd",
+		UserKey:  "asdasdasd",
+	}
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	suite.PrepareUIPathAuthAPIResponder(PrepareOauthTokenData(), OauthURL, "", "POST", 201)
+
+	token, _ := suite.c.GetAuthHeaderValue()
+
+	assert.Equal(suite.T(), "ey0123456789", token)
+}
+
 func (suite *ClientTestSuite) TestSend() {
 	header := map[string]string{}
 	type bodyMock struct {
