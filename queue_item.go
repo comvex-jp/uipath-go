@@ -11,6 +11,9 @@ const (
 	PriorityLow    = "Low"
 	PriorityNormal = "Normal"
 	PriorityHigh   = "High"
+
+	QueueItemEndpoint    = "QueueItem"
+	QueueAddItemEndpoint = "Queues/UiPathODataSvc.AddQueueItem"
 )
 
 // QueueItemHandler struct defines what the queue item handler looks like
@@ -78,52 +81,46 @@ func (q *QueueItemHandler) Store(queueItem QueueItem) (QueueItem, error) {
 		ItemData: queueItem,
 	}
 
-	url := fmt.Sprintf("%s%s", q.Client.URLEndpoint, "Queues/UiPathODataSvc.AddQueueItem")
+	url := fmt.Sprintf("%s%s", q.Client.BaseURL, QueueAddItemEndpoint)
 
 	resp, err := q.Client.SendWithAuthorization("POST", url, queueItemCreateRequest, q.buildHeaders(), map[string]string{})
 	if err != nil {
 		return result, err
 	}
 
-	if err = json.Unmarshal(resp, &result); err != nil {
-		return result, err
-	}
+	err = json.Unmarshal(resp, &result)
 
-	return result, nil
+	return result, err
 }
 
 // GetByID fetches a queue item by id
 func (q *QueueItemHandler) GetByID(ID uint) (QueueItem, error) {
 	var queueItem QueueItem
 
-	url := fmt.Sprintf("%s%s(%d)", q.Client.URLEndpoint, "QueueItems", ID)
+	url := fmt.Sprintf("%s%s(%d)", q.Client.BaseURL, QueueItemEndpoint, ID)
 
 	resp, err := q.Client.SendWithAuthorization("GET", url, nil, q.buildHeaders(), map[string]string{})
 	if err != nil {
 		return queueItem, err
 	}
 
-	if err = json.Unmarshal(resp, &queueItem); err != nil {
-		return queueItem, err
-	}
+	err = json.Unmarshal(resp, &queueItem)
 
-	return queueItem, nil
+	return queueItem, err
 }
 
 // List fetches a list of queue items that can be filtered
 func (q *QueueItemHandler) List(filters map[string]string) ([]QueueItem, int, error) {
 	var queueItemList QueueItemList
 
-	url := fmt.Sprintf("%s%s", q.Client.URLEndpoint, "QueueItems")
+	url := fmt.Sprintf("%s%s", q.Client.BaseURL, QueueItemEndpoint)
 
 	resp, err := q.Client.SendWithAuthorization("GET", url, nil, q.buildHeaders(), filters)
 	if err != nil {
 		return queueItemList.Value, queueItemList.Count, err
 	}
 
-	if err = json.Unmarshal(resp, &queueItemList); err != nil {
-		return queueItemList.Value, queueItemList.Count, err
-	}
+	err = json.Unmarshal(resp, &queueItemList)
 
 	return queueItemList.Value, queueItemList.Count, err
 }

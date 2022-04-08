@@ -13,6 +13,8 @@ const (
 	ValueTypeCredential = "Credentials"
 
 	ValueScopeGlobal = "Global"
+
+	AssetEndpoint = "Assets"
 )
 
 // AssetHandler struct defines what the asset handler looks like
@@ -61,34 +63,30 @@ type Tag struct {
 func (a *AssetHandler) GetByID(ID uint) (Asset, error) {
 	var asset Asset
 
-	url := fmt.Sprintf("%s%s(%d)", a.Client.URLEndpoint, "Assets", ID)
+	url := fmt.Sprintf("%s%s(%d)", a.Client.BaseURL, AssetEndpoint, ID)
 
 	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return asset, err
 	}
 
-	if err = json.Unmarshal(resp, &asset); err != nil {
-		return asset, err
-	}
+	err = json.Unmarshal(resp, &asset)
 
-	return asset, nil
+	return asset, err
 }
 
 // GetByName fetches the asset by name
 func (a *AssetHandler) GetByName(name string) (Asset, error) {
 	var asset Asset
 
-	url := fmt.Sprintf("%s%s?$filter=Name eq '%s'", a.Client.URLEndpoint, "Assets", name)
+	url := fmt.Sprintf("%s%s?$filter=Name eq '%s'", a.Client.BaseURL, AssetEndpoint, name)
 
 	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return asset, err
 	}
 
-	if err = json.Unmarshal(resp, &asset); err != nil {
-		return asset, err
-	}
+	err = json.Unmarshal(resp, &asset)
 
 	return asset, nil
 }
@@ -97,54 +95,45 @@ func (a *AssetHandler) GetByName(name string) (Asset, error) {
 func (a *AssetHandler) List(filters map[string]string) ([]Asset, int, error) {
 	var assetList AssetList
 
-	url := fmt.Sprintf("%s%s", a.Client.URLEndpoint, "Assets")
+	url := fmt.Sprintf("%s%s", a.Client.BaseURL, AssetEndpoint)
 
 	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), filters)
 	if err != nil {
 		return assetList.Value, assetList.Count, err
 	}
 
-	if err = json.Unmarshal(resp, &assetList); err != nil {
-		return assetList.Value, assetList.Count, err
-	}
+	err = json.Unmarshal(resp, &assetList)
 
-	return assetList.Value, assetList.Count, nil
+	return assetList.Value, assetList.Count, err
 }
 
 // Store creates and saves an asset on the orchestrator
 func (a *AssetHandler) Store(asset Asset) (Asset, error) {
 	var result Asset
 
-	url := fmt.Sprintf("%s%s", a.Client.URLEndpoint, "Assets")
+	url := fmt.Sprintf("%s%s", a.Client.BaseURL, AssetEndpoint)
 
 	resp, err := a.Client.SendWithAuthorization("POST", url, asset, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return result, err
 	}
 
-	if err = json.Unmarshal(resp, &result); err != nil {
-		return result, err
-	}
+	err = json.Unmarshal(resp, &result)
 
-	return result, nil
+	return result, err
 }
 
 // Update updates an asset
 func (a *AssetHandler) Update(asset Asset) (Asset, error) {
 
-	url := fmt.Sprintf("%s%s(%d)", a.Client.URLEndpoint, "Assets", asset.ID)
+	url := fmt.Sprintf("%s%s(%d)", a.Client.BaseURL, AssetEndpoint, asset.ID)
 
 	_, err := a.Client.SendWithAuthorization("PUT", url, asset, a.buildHeaders(), map[string]string{})
 	if err != nil {
 		return asset, err
 	}
 
-	updatedAsset, err := a.GetByID(asset.ID)
-	if err != nil {
-		return asset, err
-	}
-
-	return updatedAsset, nil
+	return a.GetByID(asset.ID)
 }
 
 func (a *AssetHandler) buildHeaders() map[string]string {

@@ -5,7 +5,13 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/comvex-jp/uipath-go/configs"
+	"github.com/patrickmn/go-cache"
 )
 
 const (
@@ -20,11 +26,10 @@ type HttpClientInterface interface {
 
 // Client defines how the UIPath client looks like
 type Client struct {
-	HttpClient                 HttpClientInterface
-	Credentials                Credentials
-	URLEndpoint                string
-	Prefix                     string
-	FailedUnauthorizedAttempts uint8
+	HttpClient  HttpClientInterface
+	Credentials Credentials
+	BaseURL     string
+	Cache       *cache.Cache
 }
 
 // Credentials struct defines what items are needed for the client credentials
@@ -39,8 +44,36 @@ type resultCode struct {
 	Result string `json:"result"`
 }
 
+// GetAuthHeaderValue gets the token if it exists and fetches if it does not
+func (client *Client) GetAuthHeaderValue() (string, error) {
+	var token string
+	res, found := client.Cache.Get(configs.UIPathOauthToken)
+
+	if !found {
+		fetchedTokenData, err := GetOAuthToken(client)
+		if err != nil {
+			return token, err
+		}
+
+		token = fetchedTokenData.AccessToken
+		expiresIn := fetchedTokenData.ExpiresIn
+
+		expireInStr := strconv.Itoa(expiresIn) + "s"
+
+		parsedExpiresIn, err := time.ParseDuration(expireInStr)
+		if err != nil {
+			return token, err
+		}
+
+		client.Cache.Set(configs.UIPathOauthToken, token, parsedExpiresIn)
+		return token, nil
+	}
+
+	return res.(string), nil
+}
+
 // Send handles all requests going out for uipath clinet
-func (c Client) Send(requestMethod string, url string, body interface{}, headers map[string]string, queryParams map[string]string) ([]byte, error) {
+func (client Client) Send(requestMethod string, url string, body interface{}, headers map[string]string, queryParams map[string]string) ([]byte, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return jsonBody, err
@@ -56,21 +89,20 @@ func (c Client) Send(requestMethod string, url string, body interface{}, headers
 	}
 
 	headers["Content-Type"] = "application/json"
-	headers[HeaderTenantName] = c.Credentials.TenantName
+	headers[HeaderTenantName] = client.Credentials.TenantName
 
 	attachHeaders(req, headers)
 
-	resp, err := c.HttpClient.Do(req)
+	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return jsonBody, err
 	}
 
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-
+	defer func(Body io.ReadCloser, Request *http.Response) {
+		if err := Body.Close(); err != nil {
+			log.Println("Error closing body from response: ", resp)
 		}
-	}(resp.Body)
+	}(resp.Body, resp)
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -86,15 +118,20 @@ func (c Client) Send(requestMethod string, url string, body interface{}, headers
 }
 
 // SendWithAuthorization attaches the authorization token to the headers and then completes the request
-func (c *Client) SendWithAuthorization(requestMethod, url string, body interface{}, headers map[string]string, queryParams map[string]string) ([]byte, error) {
-	headers[HeaderAuthorization] = "Bearer " + c.Credentials.Token
-
+func (client *Client) SendWithAuthorization(requestMethod, url string, body interface{}, headers map[string]string, queryParams map[string]string) ([]byte, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return jsonBody, err
 	}
 
-	return c.Send(requestMethod, url, body, headers, queryParams)
+	token, err := client.GetAuthHeaderValue()
+	if err != nil {
+		return jsonBody, err
+	}
+
+	headers[HeaderAuthorization] = "Bearer " + token
+
+	return client.Send(requestMethod, url, body, headers, queryParams)
 }
 
 func attachHeaders(req *http.Request, headers map[string]string) {

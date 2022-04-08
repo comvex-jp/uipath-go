@@ -6,8 +6,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/comvex-jp/uipath-go/configs"
 	"github.com/jarcoal/httpmock"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -21,10 +24,26 @@ func (suite *ClientTestSuite) SetupTest() {
 	suite.c = &Client{
 		HttpClient: &httpClientMock{},
 	}
+
+	suite.c.Cache = cache.New(5*time.Minute, 10*time.Minute)
+}
+
+func (suite *ClientTestSuite) TearDownTest() {
+	suite.c.Cache.Flush()
 }
 
 func TestClient(t *testing.T) {
 	suite.Run(t, new(ClientTestSuite))
+}
+
+func PrepareOauthTokenData() OauthTokenResponse {
+	return OauthTokenResponse{
+		TokenType:   "Bearer",
+		IDToken:     "ey0123456789",
+		ExpiresIn:   3600,
+		AccessToken: "ey0123456789",
+		Scope:       "all",
+	}
 }
 
 type httpClientMock struct {
@@ -36,25 +55,33 @@ func (c *httpClientMock) Do(req *http.Request) (*http.Response, error) {
 }
 
 func (suite *ClientTestSuite) TestGetOathToken() {
-	suite.c = &Client{
-		HttpClient: &http.Client{Transport: httpmock.DefaultTransport},
-		Credentials: Credentials{
-			ClientID: "asdasdasd",
-			UserKey:  "asdasdasd",
-		},
+	suite.c.HttpClient = &http.Client{Transport: httpmock.DefaultTransport}
+	suite.c.Credentials = Credentials{
+		ClientID: "asdasdasd",
+		UserKey:  "asdasdasd",
 	}
 
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	suite.PrepareUIPathAuthAPIResponder(PrepareOauthTokenData(), OauthURL, "", "POST", 201, true)
+	suite.PrepareUIPathAuthAPIResponder(PrepareOauthTokenData(), OauthURL, "", "POST", 201)
 
 	resp, _ := GetOAuthToken(suite.c)
 
 	assert.Equal(suite.T(), "ey0123456789", resp.AccessToken)
 }
 
+func (suite *ClientTestSuite) TestGetCachedAuthHeaderValue() {
+	testAuthToken := "=testToken="
+	suite.c.Cache.Set(configs.UIPathOauthToken, testAuthToken, 1*time.Minute)
+
+	token, _ := suite.c.GetAuthHeaderValue()
+
+	assert.Equal(suite.T(), testAuthToken, token)
+}
+
 func (suite *ClientTestSuite) TestSend() {
+	header := map[string]string{}
 	type bodyMock struct {
 		Message string `json:"message"`
 	}
@@ -73,31 +100,19 @@ func (suite *ClientTestSuite) TestSend() {
 		},
 	}
 
-	res, err := suite.c.Send("GET", "/hoge", bodyMock{Message: "test"}, nil, nil)
+	res, err := suite.c.Send("GET", "/hoge", bodyMock{Message: "test"}, header, nil)
 
 	var test map[string]interface{}
 
 	json.Unmarshal(res, &test)
-	suite.T().Log(test, err)
 
 	assert.Equal(suite.T(), "HTTP Error 401: Unauthorized", err.Error())
 	assert.Equal(suite.T(), string(res), resBody)
 }
 
-func PrepareOauthTokenData() OauthTokenResp {
-	return OauthTokenResp{
-		TokenType:   "Bearer",
-		IDToken:     "ey0123456789",
-		ExpiresIn:   2678400,
-		AccessToken: "ey0123456789",
-		Scope:       "all",
-	}
-}
-
 func (suite *ClientTestSuite) TestSendWithAuthorization() {
+	header := map[string]string{}
 	resBody := `{"http_status_code": 200}`
-
-	suite.c.Credentials.Token = "abcd1234"
 
 	suite.c.HttpClient = &httpClientMock{
 		MockedDo: func(req *http.Request) (*http.Response, error) {
@@ -109,13 +124,18 @@ func (suite *ClientTestSuite) TestSendWithAuthorization() {
 		},
 	}
 
-	res, err := suite.c.SendWithAuthorization("GET", "/", nil, nil, nil)
+	suite.c.Cache.Set(configs.UIPathOauthToken, "=testToken=", 1*time.Minute)
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	res, err := suite.c.SendWithAuthorization("GET", "/", nil, header, nil)
 
 	assert.Equal(suite.T(), err, nil)
 	assert.Equal(suite.T(), string(res), resBody)
 }
 
-func (suite *ClientTestSuite) PrepareUIPathAuthAPIResponder(providedData OauthTokenResp, envBaseUrl string, endpoint string, method string, HTTPStatusCode int, success bool) {
+func (suite *ClientTestSuite) PrepareUIPathAuthAPIResponder(providedData OauthTokenResponse, envBaseUrl string, endpoint string, method string, HTTPStatusCode int) {
 
 	mockResponse, err := json.Marshal(providedData)
 	if err != nil {

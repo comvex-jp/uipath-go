@@ -8,92 +8,89 @@ import (
 	"time"
 
 	"github.com/comvex-jp/uipath-go"
+	"github.com/comvex-jp/uipath-go/configs"
+	"github.com/patrickmn/go-cache"
 )
+
+type Examples struct {
+	Client *uipath.Client
+}
 
 func Run() {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	credentials := uipath.Credentials{
-		ClientID:   "{{ClientID}}",
-		UserKey:    "{{UserKey}}",
-		TenantName: "{{TenantName}}",
+	e := &Examples{
+		Client: &uipath.Client{
+			HttpClient: &http.Client{Transport: tr},
+			Credentials: uipath.Credentials{
+				ClientID:   "8DEv1AMNXczW3y4U15LL3jYf62jK93n5",
+				UserKey:    "oQopNZA8271RA5CX4muyWS6mXihznsHvuaMsGhula9Okd",
+				TenantName: "DigimaLeads",
+			},
+			BaseURL: "https://cloud.uipath.com/comvexcoltda/DigimaLeads/odata/",
+			Cache:   cache.New(5*time.Minute, 10*time.Minute),
+		},
 	}
 
-	httpClient := &http.Client{Transport: tr}
-
-	c := uipath.Client{
-		HttpClient:  httpClient,
-		Credentials: credentials,
-		URLEndpoint: "{{URLEndpoint}}",
-	}
-
-	res, err := uipath.GetOAuthToken(&c)
+	res, err := uipath.GetOAuthToken(e.Client)
 	if err != nil {
 		fmt.Println(res, err)
 	}
 
-	c.Credentials.Token = res.AccessToken
-
-	fmt.Print("Store Asset ")
-	fmt.Println(StoreAsset(c))
-	fmt.Print("Get Asset ")
-	fmt.Println(GetAssetById(c))
-	fmt.Print("Update Asset ")
-	fmt.Println(UpdateAsset(c))
-	fmt.Print("List Assets ")
-	fmt.Println(ListAssets(c))
-	fmt.Print("Store QueueItem ")
-	fmt.Println(StoreQueueItem(c))
-	fmt.Print("Get QueueItem ")
-	fmt.Println(GetQueueItemByID(c))
-	fmt.Print("List QueueItems ")
-	fmt.Println(ListQueueItems(c))
+	fmt.Println(e.StoreAsset())
+	fmt.Println(e.GetAssetById())
+	fmt.Println(e.UpdateAsset())
+	fmt.Println(e.ListAssets())
+	fmt.Println(e.StoreQueueItem())
+	fmt.Println(e.GetQueueItemByID())
+	fmt.Println(e.ListQueueItems())
 }
 
-func GetAssetById(c uipath.Client) (uipath.Asset, error) {
-	asset, err := StoreAsset(c)
+func (e *Examples) GetAssetById() (uipath.Asset, error) {
+	fmt.Println(e.Client.Cache.Get(configs.UIPathOauthToken))
+	asset, err := e.StoreAsset()
 	if err != nil {
 		return asset, err
 	}
 
 	aHandler := uipath.AssetHandler{
-		Client:   &c,
+		Client:   e.Client,
 		FolderId: uint(292388),
 	}
 
 	return aHandler.GetByID(asset.ID)
 }
 
-func ListAssets(c uipath.Client) ([]uipath.Asset, int, error) {
+func (e *Examples) ListAssets() ([]uipath.Asset, int, error) {
 	var assetList uipath.AssetList
 
 	filters := map[string]string{
 		"$top": "1",
 	}
 
-	_, err := StoreAsset(c)
+	_, err := e.StoreAsset()
 	if err != nil {
 		return assetList.Value, assetList.Count, err
 	}
 
 	aHandler := uipath.AssetHandler{
-		Client:   &c,
+		Client:   e.Client,
 		FolderId: uint(292388),
 	}
 
 	return aHandler.List(filters)
 }
 
-func UpdateAsset(c uipath.Client) (uipath.Asset, error) {
-	asset, err := StoreAsset(c)
+func (e *Examples) UpdateAsset() (uipath.Asset, error) {
+	asset, err := e.StoreAsset()
 	if err != nil {
 		return asset, err
 	}
 
 	aHandler := uipath.AssetHandler{
-		Client:   &c,
+		Client:   e.Client,
 		FolderId: uint(292388),
 	}
 
@@ -107,9 +104,9 @@ func UpdateAsset(c uipath.Client) (uipath.Asset, error) {
 	return aHandler.Update(updateAsset)
 }
 
-func StoreAsset(c uipath.Client) (uipath.Asset, error) {
+func (e *Examples) StoreAsset() (uipath.Asset, error) {
 	aHandler := uipath.AssetHandler{
-		Client:   &c,
+		Client:   e.Client,
 		FolderId: uint(292388),
 	}
 
@@ -126,54 +123,54 @@ func StoreAsset(c uipath.Client) (uipath.Asset, error) {
 	return aHandler.Store(asset)
 }
 
-func GetQueueItemByID(c uipath.Client) (uipath.QueueItem, error) {
-	qItem, err := StoreQueueItem(c)
+func (e *Examples) GetQueueItemByID() (uipath.QueueItem, error) {
+	qItem, err := e.StoreQueueItem()
 	if err != nil {
 		return qItem, err
 	}
 
 	queueHandler := uipath.QueueItemHandler{
-		Client:   &c,
+		Client:   e.Client,
 		FolderId: uint(292388),
 	}
 
 	return queueHandler.GetByID(qItem.ID)
 }
 
-func ListQueueItems(c uipath.Client) ([]uipath.QueueItem, int, error) {
+func (e *Examples) ListQueueItems() ([]uipath.QueueItem, int, error) {
 	var queueItemList uipath.QueueItemList
 	filters := map[string]string{
 		"$top": "1",
 	}
 
-	_, err := StoreQueueItem(c)
+	_, err := e.StoreQueueItem()
 	if err != nil {
 		return queueItemList.Value, queueItemList.Count, err
 	}
 
 	queueHandler := uipath.QueueItemHandler{
-		Client:   &c,
+		Client:   e.Client,
 		FolderId: uint(292388),
 	}
 
 	return queueHandler.List(filters)
 }
 
-func StoreQueueItem(c uipath.Client) (uipath.QueueItem, error) {
+func (e *Examples) StoreQueueItem() (uipath.QueueItem, error) {
 	qHandler := uipath.QueueItemHandler{
-		Client:   &c,
+		Client:   e.Client,
 		FolderId: uint(292388),
 	}
 
-	now := time.Now().Format("2006-01-02T15:04:05.4407392Z")
+	// now := time.Now().Format("2006-01-02T15:04:05.4407392Z")
 	qI := uipath.QueueItem{
-		DeferDate: now,
-		DueDate:   now,
-		Priority:  uipath.PriorityNormal,
-		Name:      "ContactCreation",
+		DueDate:  "2022-04-08T05:37:00.4407392Z",
+		Priority: uipath.PriorityNormal,
+		Name:     "ContactCreation",
 		SpecificContent: map[string]interface{}{
-			"Test":     "Test from API",
-			"TestBool": false,
+			"FirstName":   "FirstName Test",
+			"LastName":    "LastName Test",
+			"Credentials": "cliff-staging-credential",
 		},
 		Reference: "Petstore",
 	}

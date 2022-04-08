@@ -29,6 +29,7 @@ func (r *RequestError) Error() string {
 func ErrorResponseHandler(statusCode int, errResp []byte) error {
 	var requestError RequestError
 
+	// Check the response body if it's empty and if it is, we assume that it's an HTTP error.
 	if len(errResp) < 1 {
 		return errors.New(fmt.Sprintf("HTTP Error %d: %s", statusCode, http.StatusText(statusCode)))
 	}

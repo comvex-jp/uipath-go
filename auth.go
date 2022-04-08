@@ -6,8 +6,8 @@ import (
 
 const OauthURL = "https://account.uipath.com/oauth/token"
 
-// OauthTokenResp is the structure when fetching an oauth token
-type OauthTokenResp struct {
+// OauthTokenResponse is the structure when fetching an oauth token
+type OauthTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	IDToken     string `json:"id_token"`
 	Scope       string `json:"scope"`
@@ -23,10 +23,10 @@ type OauthTokenRequest struct {
 }
 
 // GetOAuthToken requests oauthtoken using credentials
-func GetOAuthToken(c *Client) (OauthTokenResp, error) {
+func GetOAuthToken(c *Client) (OauthTokenResponse, error) {
 	url := OauthURL
 
-	var result OauthTokenResp
+	var result OauthTokenResponse
 
 	body := OauthTokenRequest{
 		GrantType:    "refresh_token",
@@ -39,9 +39,7 @@ func GetOAuthToken(c *Client) (OauthTokenResp, error) {
 		return result, err
 	}
 
-	if err = json.Unmarshal(respBody, &result); err != nil {
-		return result, err
-	}
+	err = json.Unmarshal(respBody, &result)
 
-	return result, nil
+	return result, err
 }
