@@ -48,7 +48,7 @@ type Asset struct {
 // AssetList struct defines what the asset list looks like
 type AssetList struct {
 	Count int     `json:"@odata.count"`
-	Value []Asset `json:"Value"`
+	Value []Asset `json:"value"`
 }
 
 // Tag struct defines what the tag item looks like
