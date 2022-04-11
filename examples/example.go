@@ -29,7 +29,7 @@ func Run() {
 				UserKey:    "{{test_user_key}}",
 				TenantName: "{{test_tenant_name}}",
 			},
-			BaseURL: "{{test_base_url}}", // UIPATH url specific to the organization/tenant eg. {{uipathcloudUrl}}/{{cloudOrg}}/{{cloudTenant}}
+			BaseURL: "{{test_base_url}}", // UIPATH url specific to the organization/tenant eg. uipath.com/orgName/tenantName
 			Cache:   cache.New(5*time.Minute, 10*time.Minute),
 		},
 	}
