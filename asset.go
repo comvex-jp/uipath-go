@@ -132,7 +132,6 @@ func (a *AssetHandler) Store(asset Asset) (Asset, error) {
 
 // Update updates an asset
 func (a *AssetHandler) Update(asset Asset) (Asset, error) {
-
 	url := fmt.Sprintf("%s%s(%d)", a.Client.BaseURL, AssetEndpoint, asset.ID)
 
 	_, err := a.Client.SendWithAuthorization("PUT", url, asset, a.buildHeaders(), map[string]string{})
