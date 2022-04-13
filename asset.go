@@ -10,7 +10,7 @@ const (
 	ValueTypeText       = "Text"
 	ValueTypeInteger    = "Integer"
 	ValueTypeBool       = "Bool"
-	ValueTypeCredential = "Credentials"
+	ValueTypeCredential = "Credential"
 
 	ValueScopeGlobal = "Global"
 
