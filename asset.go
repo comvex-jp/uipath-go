@@ -142,6 +142,15 @@ func (a *AssetHandler) Update(asset Asset) (Asset, error) {
 	return a.GetByID(asset.ID)
 }
 
+// DeleteByID deletes an asset by id
+func (a *AssetHandler) DeleteByID(ID uint) error {
+	url := fmt.Sprintf("%s%s(%d)", a.Client.BaseURL, AssetEndpoint, ID)
+
+	_, err := a.Client.SendWithAuthorization("DELETE", url, nil, a.buildHeaders(), map[string]string{})
+
+	return err
+}
+
 func (a *AssetHandler) buildHeaders() map[string]string {
 	var headers = map[string]string{}
 
