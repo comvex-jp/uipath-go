@@ -16,6 +16,9 @@ type Examples struct {
 	Client *uipath.Client
 }
 
+// folderID UiPath folderId
+const folderID = "{{FolderID}}"
+
 func Run() {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -37,6 +40,7 @@ func Run() {
 	fmt.Println(e.StoreAsset())
 	fmt.Println(e.GetAssetById())
 	fmt.Println(e.UpdateAsset())
+	fmt.Println(e.DeleteAsset())
 	fmt.Println(e.ListAssets())
 	fmt.Println(e.StoreQueueItem())
 	fmt.Println(e.GetQueueItemByID())
@@ -52,7 +56,7 @@ func (e *Examples) GetAssetById() (uipath.Asset, error) {
 
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(292388),
+		FolderId: uint(folderID),
 	}
 
 	return aHandler.GetByID(asset.ID)
@@ -72,7 +76,7 @@ func (e *Examples) ListAssets() ([]uipath.Asset, int, error) {
 
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(292388),
+		FolderId: uint(folderID),
 	}
 
 	return aHandler.List(filters)
@@ -86,7 +90,7 @@ func (e *Examples) UpdateAsset() (uipath.Asset, error) {
 
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(292388),
+		FolderId: uint(folderID),
 	}
 
 	updateAsset := uipath.Asset{
@@ -102,7 +106,7 @@ func (e *Examples) UpdateAsset() (uipath.Asset, error) {
 func (e *Examples) StoreAsset() (uipath.Asset, error) {
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(292388),
+		FolderId: uint(folderID),
 	}
 
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -126,7 +130,7 @@ func (e *Examples) GetQueueItemByID() (uipath.QueueItem, error) {
 
 	queueHandler := uipath.QueueItemHandler{
 		Client:   e.Client,
-		FolderId: uint(292388),
+		FolderId: uint(folderID),
 	}
 
 	return queueHandler.GetByID(qItem.ID)
@@ -145,7 +149,7 @@ func (e *Examples) ListQueueItems() ([]uipath.QueueItem, int, error) {
 
 	queueHandler := uipath.QueueItemHandler{
 		Client:   e.Client,
-		FolderId: uint(292388),
+		FolderId: uint(folderID),
 	}
 
 	return queueHandler.List(filters)
@@ -154,7 +158,7 @@ func (e *Examples) ListQueueItems() ([]uipath.QueueItem, int, error) {
 func (e *Examples) StoreQueueItem() (uipath.QueueItem, error) {
 	qHandler := uipath.QueueItemHandler{
 		Client:   e.Client,
-		FolderId: uint(292388),
+		FolderId: uint(folderID),
 	}
 
 	// now := time.Now().Format("2006-01-02T15:04:05.4407392Z")
@@ -171,4 +175,18 @@ func (e *Examples) StoreQueueItem() (uipath.QueueItem, error) {
 	}
 
 	return qHandler.Store(qI)
+}
+
+func (e *Examples) DeleteAsset() error {
+	asset, err := e.StoreAsset()
+	if err != nil {
+		return err
+	}
+
+	aHandler := uipath.AssetHandler{
+		Client:   e.Client,
+		FolderId: uint(folderID),
+	}
+
+	return aHandler.DeleteByID(asset.ID)
 }
