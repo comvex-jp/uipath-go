@@ -20,6 +20,12 @@ const (
 	HeaderTenantName         = "X-UIPATH-TenantName"
 )
 
+var httpSuccessCodes = map[int]string{
+	200: "success",
+	201: "created",
+	204: "no content",
+}
+
 type HttpClientInterface interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -110,7 +116,7 @@ func (client Client) Send(requestMethod string, url string, body interface{}, he
 	}
 
 	// Handle any errors from the response
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	if _, ok := httpSuccessCodes[resp.StatusCode]; ! ok {
 		return respBody, ErrorResponseHandler(resp.StatusCode, respBody)
 	}
 
