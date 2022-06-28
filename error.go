@@ -8,6 +8,9 @@ import (
 )
 
 const (
+	// Access denied
+	UnauthorizedCode = 999
+
 	// Invalid request
 	InvalidRequestCode = 1000
 
@@ -47,6 +50,10 @@ func ErrorResponseHandler(statusCode int, errResp []byte) error {
 
 	if err := json.Unmarshal(errResp, &requestError); err != nil {
 		return err
+	}
+
+	if requestError.ErrorCode == 0 && requestError.ErrorDescription == "Unauthorized" {
+		requestError.ErrorCode = UnauthorizedCode
 	}
 
 	return &requestError
