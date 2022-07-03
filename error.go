@@ -11,14 +11,8 @@ const (
 	// Access denied
 	UnauthorizedCode = 999
 
-	// Invalid request
-	InvalidRequestCode = 1000
-
 	// Asset does not exist
 	ItemNotFoundCode = 1002
-
-	// Asset already exists in the database
-	ItemAlreadyExistsCode = 1004
 )
 
 // RequestError defines how the error looks like from the response
