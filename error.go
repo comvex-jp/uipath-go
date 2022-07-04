@@ -7,6 +7,14 @@ import (
 	"net/http"
 )
 
+const (
+	// Access denied
+	UnauthorizedCode = 999
+
+	// Asset does not exist
+	ItemNotFoundCode = 1002
+)
+
 // RequestError defines how the error looks like from the response
 type RequestError struct {
 	Message          string `json:"message"`
@@ -36,6 +44,10 @@ func ErrorResponseHandler(statusCode int, errResp []byte) error {
 
 	if err := json.Unmarshal(errResp, &requestError); err != nil {
 		return err
+	}
+
+	if requestError.ErrorCode == 0 && requestError.ErrorDescription == "Unauthorized" {
+		requestError.ErrorCode = UnauthorizedCode
 	}
 
 	return &requestError
