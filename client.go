@@ -40,10 +40,13 @@ type Client struct {
 
 // Credentials struct defines what items are needed for the client credentials
 type Credentials struct {
-	ClientID   string
-	UserKey    string
-	TenantName string
-	Token      string
+	ClientID          string // Deprecated: Use ApplicationID
+	UserKey           string // Deprecated: Use ApplicationSecret
+	TenantName        string
+	Token             string
+	ApplicationID     string
+	ApplicationSecret string
+	Scopes            string
 }
 
 type resultCode struct {
@@ -53,10 +56,16 @@ type resultCode struct {
 // GetAuthHeaderValue gets the token if it exists and fetches if it does not
 func (client *Client) GetAuthHeaderValue() (string, error) {
 	var token string
-	res, found := client.Cache.Get(configs.UIPathOauthToken)
 
+	res, found := client.Cache.Get(configs.UIPathOauthToken)
 	if !found {
 		fetchedTokenData, err := GetOAuthToken(client)
+		if err != nil {
+			log.Println("Error fetching access token: ", err.Error())
+
+			fetchedTokenData, err = DeprecatedGetOAuthToken(client)
+		}
+
 		if err != nil {
 			return token, err
 		}
@@ -94,7 +103,10 @@ func (client Client) Send(requestMethod string, url string, body interface{}, he
 		attachQueryParams(req, queryParams)
 	}
 
-	headers["Content-Type"] = "application/json"
+	if _, ok := headers["Content-Type"]; !ok {
+		headers["Content-Type"] = "application/json"
+	}
+
 	headers[HeaderTenantName] = client.Credentials.TenantName
 
 	attachHeaders(req, headers)
@@ -116,7 +128,7 @@ func (client Client) Send(requestMethod string, url string, body interface{}, he
 	}
 
 	// Handle any errors from the response
-	if _, ok := httpSuccessCodes[resp.StatusCode]; ! ok {
+	if _, ok := httpSuccessCodes[resp.StatusCode]; !ok {
 		return respBody, ErrorResponseHandler(resp.StatusCode, respBody)
 	}
 

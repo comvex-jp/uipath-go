@@ -33,7 +33,7 @@ func (r *RequestError) Error() string {
 	return fmt.Sprintf("Request Failed: Error Code(%d) %s", r.ErrorCode, r.Message)
 }
 
-//ErrorResponseHandler handles the errors from the uipath response
+// ErrorResponseHandler handles the errors from the uipath response
 func ErrorResponseHandler(statusCode int, errResp []byte) error {
 	var requestError RequestError
 

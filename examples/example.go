@@ -28,9 +28,12 @@ func Run() {
 		Client: &uipath.Client{
 			HttpClient: &http.Client{Transport: tr},
 			Credentials: uipath.Credentials{
-				ClientID:   "{{test_client_Id}}",
-				UserKey:    "{{test_user_key}}",
-				TenantName: "{{test_tenant_name}}",
+				ClientID:          "{{test_client_Id}}", // Deprecated:
+				UserKey:           "{{test_user_key}}",  // Deprecated:
+				TenantName:        "{{test_tenant_name}}",
+				ApplicationID:     "{{test_application_id}}",
+				ApplicationSecret: "{{test_application_secret}}",
+				Scopes:            "{{test_application_scopes}}",
 			},
 			BaseURL: "{{test_base_url}}", // UIPATH url specific to the organization/tenant eg. uipath.com/orgName/tenantName/odata
 			Cache:   cache.New(5*time.Minute, 10*time.Minute),
