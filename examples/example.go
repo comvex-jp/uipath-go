@@ -9,6 +9,7 @@ import (
 
 	"github.com/comvex-jp/uipath-go"
 	"github.com/comvex-jp/uipath-go/configs"
+	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -16,8 +17,9 @@ type Examples struct {
 	Client *uipath.Client
 }
 
-// folderID UiPath folderId
-const folderID = "{{FolderID}}"
+const folderID = 1234567 // UIPATH Folder ID spcific to a Portal
+const username string = "{{UserName}}"
+const password string = "{{Password}}"
 
 func Run() {
 	tr := &http.Transport{
@@ -28,15 +30,19 @@ func Run() {
 		Client: &uipath.Client{
 			HttpClient: &http.Client{Transport: tr},
 			Credentials: uipath.Credentials{
-				ClientID:   "{{test_client_Id}}",
-				UserKey:    "{{test_user_key}}",
-				TenantName: "{{test_tenant_name}}",
+				ClientID:          "{{test_client_Id}}", // Deprecated:
+				UserKey:           "{{test_user_key}}",  // Deprecated:
+				TenantName:        "{{test_tenant_name}}",
+				ApplicationID:     "{{test_application_id}}",
+				ApplicationSecret: "{{test_application_secret}}",
+				Scopes:            "{{test_application_scopes}}",
 			},
 			BaseURL: "{{test_base_url}}", // UIPATH url specific to the organization/tenant eg. uipath.com/orgName/tenantName/odata
 			Cache:   cache.New(5*time.Minute, 10*time.Minute),
 		},
 	}
 
+	fmt.Println(e.getOauthToken())
 	fmt.Println(e.StoreAsset())
 	fmt.Println(e.GetAssetById())
 	fmt.Println(e.UpdateAsset())
@@ -45,6 +51,17 @@ func Run() {
 	fmt.Println(e.StoreQueueItem())
 	fmt.Println(e.GetQueueItemByID())
 	fmt.Println(e.ListQueueItems())
+	fmt.Println(e.StoreCredentialVerificationQueueItem())
+	fmt.Println(e.StoreDataExtractVerificationQueueItem())
+}
+
+func (e *Examples) getOauthToken() uipath.OauthTokenResponse {
+	response, err := uipath.GetOAuthToken(e.Client)
+	if err != nil {
+		panic(err)
+	}
+
+	return response
 }
 
 func (e *Examples) GetAssetById() (uipath.Asset, error) {
@@ -56,7 +73,7 @@ func (e *Examples) GetAssetById() (uipath.Asset, error) {
 
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	return aHandler.GetByID(asset.ID)
@@ -76,7 +93,7 @@ func (e *Examples) ListAssets() ([]uipath.Asset, int, error) {
 
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	return aHandler.List(filters)
@@ -90,7 +107,7 @@ func (e *Examples) UpdateAsset() (uipath.Asset, error) {
 
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	updateAsset := uipath.Asset{
@@ -103,10 +120,27 @@ func (e *Examples) UpdateAsset() (uipath.Asset, error) {
 	return aHandler.Update(updateAsset)
 }
 
+func (e *Examples) StoreLoginAsset() (uipath.Asset, error) {
+	aHandler := uipath.AssetHandler{
+		Client:   e.Client,
+		FolderId: folderID,
+	}
+
+	asset := uipath.Asset{
+		Name:               "dgm-1-1-credential",
+		ValueType:          uipath.ValueTypeCredential,
+		ValueScope:         uipath.ValueScopeGlobal,
+		CredentialUsername: username,
+		CredentialPassword: password,
+	}
+
+	return aHandler.Store(asset)
+}
+
 func (e *Examples) StoreAsset() (uipath.Asset, error) {
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -130,7 +164,7 @@ func (e *Examples) GetQueueItemByID() (uipath.QueueItem, error) {
 
 	queueHandler := uipath.QueueItemHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	return queueHandler.GetByID(qItem.ID)
@@ -149,23 +183,66 @@ func (e *Examples) ListQueueItems() ([]uipath.QueueItem, int, error) {
 
 	queueHandler := uipath.QueueItemHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	return queueHandler.List(filters)
 }
 
+func (e *Examples) StoreCredentialVerificationQueueItem() (uipath.QueueItem, error) {
+	qHandler := uipath.QueueItemHandler{
+		Client:   e.Client,
+		FolderId: folderID,
+	}
+
+	// now := time.Now().Format("2006-01-02T15:04:05.4407392Z")
+	qI := uipath.QueueItem{
+		Priority: uipath.PriorityNormal,
+		Name:     "CredentialVerification",
+		SpecificContent: map[string]interface{}{
+			"CredentialName": "dgm-2-17-credential",
+			"AccountID":      2,
+			"PortalID":       17,
+		},
+		Reference: uuid.NewString(),
+	}
+
+	return qHandler.Store(qI)
+}
+
+func (e *Examples) StoreDataExtractVerificationQueueItem() (uipath.QueueItem, error) {
+	qHandler := uipath.QueueItemHandler{
+		Client:   e.Client,
+		FolderId: folderID,
+	}
+
+	qI := uipath.QueueItem{
+		Name: "DataExtraction",
+		SpecificContent: map[string]interface{}{
+			"CredentialName":                  "dgm-2-17-credential",
+			"AccountID":                       2,
+			"PortalID":                        17,
+			"SubmittedAt":                     "2022-09-20 10:04:05",
+			"LastSubmittedProviderIdentifier": "u1223316",
+		},
+		Priority:  uipath.PriorityNormal,
+		Reference: uuid.NewString(),
+	}
+
+	return qHandler.Store(qI)
+}
+
 func (e *Examples) StoreQueueItem() (uipath.QueueItem, error) {
 	qHandler := uipath.QueueItemHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	// now := time.Now().Format("2006-01-02T15:04:05.4407392Z")
 	qI := uipath.QueueItem{
 		DueDate:  "2022-04-08T05:37:00.4407392Z",
 		Priority: uipath.PriorityNormal,
-		Name:     "ContactCreation",
+		Name:     "CredentialVerification",
 		SpecificContent: map[string]interface{}{
 			"FirstName":   "FirstName Test",
 			"LastName":    "LastName Test",
@@ -185,7 +262,7 @@ func (e *Examples) DeleteAsset() error {
 
 	aHandler := uipath.AssetHandler{
 		Client:   e.Client,
-		FolderId: uint(folderID),
+		FolderId: folderID,
 	}
 
 	return aHandler.DeleteByID(asset.ID)

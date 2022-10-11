@@ -57,8 +57,11 @@ func (c *httpClientMock) Do(req *http.Request) (*http.Response, error) {
 func (suite *ClientTestSuite) TestGetOathToken() {
 	suite.c.HttpClient = &http.Client{Transport: httpmock.DefaultTransport}
 	suite.c.Credentials = Credentials{
-		ClientID: "asdasdasd",
-		UserKey:  "asdasdasd",
+		ClientID:          "asdasdasd",
+		UserKey:           "asdasdasd",
+		ApplicationID:     "TEST_APP_ID",
+		ApplicationSecret: "TEST_APP_SECRET",
+		Scopes:            "all",
 	}
 
 	httpmock.Activate()
@@ -69,6 +72,28 @@ func (suite *ClientTestSuite) TestGetOathToken() {
 	resp, _ := GetOAuthToken(suite.c)
 
 	assert.Equal(suite.T(), "ey0123456789", resp.AccessToken)
+}
+
+func (suite *ClientTestSuite) TestGetOathTokenFallback() {
+	suite.c.HttpClient = &http.Client{Transport: httpmock.DefaultTransport}
+	suite.c.Credentials = Credentials{
+		ClientID:          "asdasdasd",
+		UserKey:           "asdasdasd",
+		ApplicationID:     "asdasdasd",
+		ApplicationSecret: "asdasdasd",
+		Scopes:            "all",
+	}
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	suite.PrepareUIPathAuthAPIResponder(OauthTokenResponse{}, OauthURL, "", "POST", 404)
+	suite.PrepareUIPathAuthAPIResponder(PrepareOauthTokenData(), DeprecatedOauthURL, "", "POST", 201)
+
+	token, err := suite.c.GetAuthHeaderValue()
+	assert.Nil(suite.T(), err)
+
+	assert.Equal(suite.T(), "ey0123456789", token)
 }
 
 func (suite *ClientTestSuite) TestGetCachedAuthHeaderValue() {
