@@ -17,8 +17,7 @@ type Examples struct {
 	Client *uipath.Client
 }
 
-// folderID UiPath folderId
-const folderID = "{{FolderID}}"
+const folderID = 1234567 // UIPATH Folder ID spcific to a Portal
 const username string = "{{UserName}}"
 const password string = "{{Password}}"
 
@@ -38,7 +37,7 @@ func Run() {
 				ApplicationSecret: "{{test_application_secret}}",
 				Scopes:            "{{test_application_scopes}}",
 			},
-			BaseURL: "https://cloud.uipath.com/comvexcoltda/DigimaLeads/odata/", // UIPATH url specific to the organization/tenant eg. uipath.com/orgName/tenantName/odata
+			BaseURL: "{{test_base_url}}", // UIPATH url specific to the organization/tenant eg. uipath.com/orgName/tenantName/odata
 			Cache:   cache.New(5*time.Minute, 10*time.Minute),
 		},
 	}
