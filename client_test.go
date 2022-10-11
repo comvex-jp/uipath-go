@@ -59,8 +59,8 @@ func (suite *ClientTestSuite) TestGetOathToken() {
 	suite.c.Credentials = Credentials{
 		ClientID:          "asdasdasd",
 		UserKey:           "asdasdasd",
-		ApplicationID:     "asdasdasd",
-		ApplicationSecret: "asdasdasd",
+		ApplicationID:     "TEST_APP_ID",
+		ApplicationSecret: "TEST_APP_SECRET",
 		Scopes:            "all",
 	}
 

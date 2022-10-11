@@ -3,6 +3,12 @@ package uipath
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
 // Deprecated: User key based authentication is deprecated since October, 2021
@@ -57,28 +63,58 @@ func DeprecatedGetOAuthToken(c *Client) (OauthTokenResponse, error) {
 	return result, err
 }
 
-// GetOAuthToken requests oauthtoken using ClientCredentials
+// GetOAuthToken requests Oauth Token using ClientCredentials
 func GetOAuthToken(c *Client) (OauthTokenResponse, error) {
 	var result OauthTokenResponse
 
-	body := OauthTokenRequest{
-		GrantType:    "client_credentials",
-		ClientID:     c.Credentials.ApplicationID,
-		ClientSecret: c.Credentials.ApplicationSecret,
-		Scope:        c.Credentials.Scopes,
+	queryParams := map[string]string{
+		"grant_type":    "client_credentials",
+		"client_id":     c.Credentials.ApplicationID,
+		"client_secret": c.Credentials.ApplicationSecret,
+		"scope":         c.Credentials.Scopes,
 	}
 
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
-	respBody, err := c.Send("POST", OauthURL, body, headers, nil)
+	form := url.Values{}
+	for k, v := range queryParams {
+		form.Add(k, v)
+	}
+
+	req, err := http.NewRequest("POST", OauthURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return result, err
 	}
 
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return result, err
+	}
+
+	defer func(Body io.ReadCloser, Request *http.Response) {
+		if err := Body.Close(); err != nil {
+			log.Println("Error closing body from response: ", resp)
+		}
+	}(resp.Body, resp)
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return result, err
+	}
+
+	// Handle any errors from the response
+	if _, ok := httpSuccessCodes[resp.StatusCode]; !ok {
+		return result, ErrorResponseHandler(resp.StatusCode, respBody)
+	}
+
 	err = json.Unmarshal(respBody, &result)
+	if err != nil {
+		return result, err
+	}
 
 	if result.AccessToken == "" {
 		return result, errors.New("Empty Access Token Error")
 	}
 
-	return result, err
+	return result, nil
 }

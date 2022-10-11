@@ -23,10 +23,17 @@ type ExamplesTestSuite struct {
 func (suite *ExamplesTestSuite) SetupTest() {
 	cache := cache.New(5*time.Minute, 5*time.Minute)
 	suite.c = &uipath.Client{
-		HttpClient:  &http.Client{Transport: httpmock.DefaultTransport},
-		Credentials: uipath.Credentials{ClientID: "testClientID", UserKey: "testUserKey"},
-		BaseURL:     "https://cloud.uipath.com/exampleOrg/exampleTenant/odata/",
-		Cache:       cache,
+		HttpClient: &http.Client{Transport: httpmock.DefaultTransport},
+		Credentials: uipath.Credentials{
+			ClientID:          "testClientID",
+			UserKey:           "testUserKey",
+			TenantName:        "TestTenant",
+			ApplicationID:     "TEST_APP_ID",
+			ApplicationSecret: "TEST_APP_SECRET",
+			Scopes:            "all",
+		},
+		BaseURL: "https://cloud.uipath.com/exampleOrg/exampleTenant/odata/",
+		Cache:   cache,
 	}
 
 	suite.c.Cache.Set(configs.UIPathOauthToken, "=testToken=", 5*time.Minute)
