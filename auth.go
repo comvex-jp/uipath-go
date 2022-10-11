@@ -41,7 +41,7 @@ type OauthTokenRequest struct {
 	Scope        string `json:"scope"`
 }
 
-// Deprecated: getOAuthToken requests oauthtoken using UserKey
+// Deprecated: DeprecatedGetOAuthToken requests oauthtoken using UserKey
 func DeprecatedGetOAuthToken(c *Client) (OauthTokenResponse, error) {
 	url := DeprecatedOauthURL
 
