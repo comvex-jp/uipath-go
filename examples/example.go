@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/comvex-jp/uipath-go"
-	"github.com/comvex-jp/uipath-go/configs"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 )
@@ -17,7 +17,7 @@ type Examples struct {
 	Client *uipath.Client
 }
 
-const folderID = 1234567 // UIPATH Folder ID spcific to a Portal
+var folderID = uint(1234567) // UIPATH Folder ID spcific to a Portal
 const username string = "{{UserName}}"
 const password string = "{{Password}}"
 
@@ -42,17 +42,117 @@ func Run() {
 		},
 	}
 
-	fmt.Println(e.getOauthToken())
-	fmt.Println(e.StoreAsset())
-	fmt.Println(e.GetAssetById())
-	fmt.Println(e.UpdateAsset())
-	fmt.Println(e.DeleteAsset())
-	fmt.Println(e.ListAssets())
-	fmt.Println(e.StoreQueueItem())
-	fmt.Println(e.GetQueueItemByID())
-	fmt.Println(e.ListQueueItems())
-	fmt.Println(e.StoreCredentialVerificationQueueItem())
-	fmt.Println(e.StoreDataExtractVerificationQueueItem())
+	// fmt.Println(e.getOauthToken())
+	// fmt.Println(e.StoreAsset())
+	// fmt.Println(e.GetAssetById())
+	// fmt.Println(e.UpdateAsset())
+	// fmt.Println(e.DeleteAsset())
+	// fmt.Println(e.ListAssets())
+	// fmt.Println(e.StoreQueueItem())
+	// fmt.Println(e.GetQueueItemByID())
+	// fmt.Println(e.ListQueueItems())
+	// fmt.Println(e.StoreCredentialVerificationQueueItem())
+	// fmt.Println(e.StoreDataExtractVerificationQueueItem())
+
+}
+
+func (e *Examples) isDataExtractionQueueStable() bool {
+
+	folderIDs, err := e.getFolderIDs()
+	if err != nil {
+		fmt.Printf("err:%+s \n", err.Error())
+
+		return false
+	}
+
+	var queueDefinitions []uipath.QueueDefinition
+	for _, fID := range folderIDs {
+		queueDefinitions, err = e.getDataExtractionQueues(fID)
+
+		var failedItems []uipath.QueueItem
+
+		var count int
+
+		for _, qd := range queueDefinitions {
+			failedItems, count, err = e.getQueueItemsFailed(qd.ID, fID, uint(6000))
+			if err != nil {
+				fmt.Printf("err:%+s \n", err.Error())
+
+				continue
+			}
+
+			if count != 0 {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func (e *Examples) getFolderIDs() ([]uint, error) {
+	var folderIDs []uint
+	handler := uipath.FolderHandler{
+		Client: e.Client,
+	}
+
+	filters := map[string]string{
+		"$filter": "contains(FullyQualifiedName, 'Portals/')",
+		"$select": "Id, DisplayName",
+	}
+
+	folders, _, err := handler.List(filters)
+	if err != nil {
+		return folderIDs, err
+	}
+
+	for _, folder := range folders {
+		folderIDs = append(folderIDs, folder.ID)
+	}
+
+	return folderIDs, nil
+}
+
+func (e *Examples) getDataExtractionQueues(fID uint) ([]uipath.QueueDefinition, error) {
+	handler := uipath.QueueDefinitionHandler{
+		Client:   e.Client,
+		FolderID: fID,
+	}
+
+	filters := map[string]string{
+		"$filter": "contains(Name, 'DataExtraction')",
+		"$select": "Id, Name",
+	}
+
+	queueDefinitions, _, err := handler.List(filters)
+	if err != nil {
+		return queueDefinitions, nil
+	}
+
+	return queueDefinitions, nil
+}
+
+func (e *Examples) getQueueItemsFailed(queueDefinitionId, fID, inMinutes uint) ([]uipath.QueueItem, int, error) {
+	if inMinutes == 0 {
+		inMinutes = 5
+	}
+
+	now := time.Now()
+
+	afterDate := now.Add(time.Duration(-inMinutes) * time.Minute).Format("2006-01-02T15:04:05.440Z")
+
+	filters := map[string]string{
+		"$top":    "1",
+		"$filter": "QueueDefinitionId eq " + strconv.Itoa(int(queueDefinitionId)) + " and Status eq 'Failed' and StartProcessing gt " + afterDate,
+		"$select": "Key, OrganizationUnitFullyQualifiedName, SpecificContent, StartProcessing, Status, ProcessingException",
+	}
+
+	queueHandler := uipath.QueueItemHandler{
+		Client:   e.Client,
+		FolderId: fID,
+	}
+
+	return queueHandler.List(filters)
 }
 
 func (e *Examples) getOauthToken() uipath.OauthTokenResponse {
@@ -65,7 +165,6 @@ func (e *Examples) getOauthToken() uipath.OauthTokenResponse {
 }
 
 func (e *Examples) GetAssetById() (uipath.Asset, error) {
-	fmt.Println(e.Client.Cache.Get(configs.UIPathOauthToken))
 	asset, err := e.StoreAsset()
 	if err != nil {
 		return asset, err

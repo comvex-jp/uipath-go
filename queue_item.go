@@ -12,7 +12,7 @@ const (
 	PriorityNormal = "Normal"
 	PriorityHigh   = "High"
 
-	QueueItemEndpoint    = "QueueItem"
+	QueueItemEndpoint    = "QueueItems"
 	QueueAddItemEndpoint = "Queues/UiPathODataSvc.AddQueueItem"
 )
 
