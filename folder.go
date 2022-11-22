@@ -38,12 +38,14 @@ type FolderList struct {
 // List fetches a list of folders that can be filtered using query parameters
 func (f *FolderHandler) List(filters map[string]string) ([]Folder, int, error) {
 	var folderList FolderList
+	var headers = map[string]string{}
 
 	url := fmt.Sprintf("%s%s", f.Client.BaseURL, FolderEndpoint)
 
-	resp, err := f.Client.SendWithAuthorization("GET", url, nil, nil, filters)
+	resp, err := f.Client.SendWithAuthorization("GET", url, nil, headers, filters)
+
 	if err != nil {
-		return folderList.Value, folderList.Count, err
+		return folderList.Value, 0, err
 	}
 
 	err = json.Unmarshal(resp, &folderList)
