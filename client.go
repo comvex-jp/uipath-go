@@ -112,6 +112,9 @@ func (client Client) Send(requestMethod string, url string, body interface{}, he
 
 	attachHeaders(req, headers)
 
+	fmt.Printf("request: %+v\n", req)
+	fmt.Printf("headers: %+v\n", headers)
+
 	resp, err := client.HttpClient.Do(req)
 	if err != nil {
 		return jsonBody, err
