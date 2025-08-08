@@ -82,6 +82,8 @@ func (a *AssetHandler) GetByName(name string) (Asset, error) {
 
 	url := fmt.Sprintf("%s%s?$filter=Name eq '%s'", a.Client.BaseURL, AssetEndpoint, name)
 
+	fmt.Printf("url: %s\n", url)
+
 	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), map[string]string{})
 
 	fmt.Printf("response: %+v\n", resp)
