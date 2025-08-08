@@ -3,6 +3,7 @@ package uipath
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -115,6 +116,13 @@ func (client Client) Send(requestMethod string, url string, body interface{}, he
 	if err != nil {
 		return jsonBody, err
 	}
+
+	fmt.Printf("response: %+v\n", resp)
+	bodyResp, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("body: %+v\n", string(bodyResp))
 
 	defer func(Body io.ReadCloser, Request *http.Response) {
 		if err := Body.Close(); err != nil {
