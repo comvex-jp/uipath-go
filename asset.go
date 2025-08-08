@@ -3,6 +3,7 @@ package uipath
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 )
 
@@ -80,7 +81,10 @@ func (a *AssetHandler) GetByName(name string) (Asset, error) {
 	var assetList AssetList
 	var asset Asset
 
-	url := fmt.Sprintf("%s%s?$filter=Name eq '%s'", a.Client.BaseURL, AssetEndpoint, name)
+	params := url.Values{}
+	params.Set("$filter", fmt.Sprintf("Name eq '%s'", name))
+
+	url := fmt.Sprintf("%s%s?%s", a.Client.BaseURL, AssetEndpoint, params.Encode())
 
 	resp, err := a.Client.SendWithAuthorization("GET", url, nil, a.buildHeaders(), map[string]string{})
 	if err != nil {
